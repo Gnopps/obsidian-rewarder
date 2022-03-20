@@ -40,7 +40,7 @@ export default class ObsidianRewarder extends Plugin {
 			(Math.random() * 10) / divideByToGetCorrectMaxRandom
 		);
 		console.log(chosenReward);
-		console.log(listOfRewards[chosenReward]);
+		console.log(listOfRewards[chosenReward] - 1);
 	}
 	async onload() {
 		this.registerDomEvent(document, "click", (evt: MouseEvent) => {
