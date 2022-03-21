@@ -10,9 +10,17 @@ import {
 	ToggleComponent,
 } from "obsidian";
 
-// Remember to rename these classes and interfaces!
+interface ObsidianRewarderSettings {
+	mySetting: string;
+}
+
+const DEFAULT_SETTINGS: ObsidianRewarderSettings = {
+	mySetting: "default",
+};
 
 export default class ObsidianRewarder extends Plugin {
+	settings: ObsidianRewarderSettings;
+
 	async handleReward() {
 		let arrayOfCleanedRewards = [];
 		let chosenReward;
@@ -82,7 +90,7 @@ export default class ObsidianRewarder extends Plugin {
 					}
 					rewardName = dirtyRewardWithoutFirstMetadata;
 				} else {
-					const secondMetadataValue =
+					secondMetadataValue =
 						dirtyRewardWithoutFirstMetadata.substring(
 							secondMetadataStart + 1,
 							secondMetadataEnd
@@ -128,13 +136,30 @@ export default class ObsidianRewarder extends Plugin {
 		console.log(arrayOfCleanedRewards);
 
 		// Substract reward quantity
-		let indexOfReward = contents.indexOf(
-			arrayOfCleanedRewards[chosenReward]
+		let adjustedReward;
+		if (arrayOfCleanedRewards[chosenReward].rewardsLeft) {
+			let newRewardsLeft =
+				arrayOfCleanedRewards[chosenReward].rewardsLeft - 1;
+			adjustedReward = arrayOfCleanedRewards[
+				chosenReward
+			].dirtyReward.replace(
+				"{" + arrayOfCleanedRewards[chosenReward].rewardsLeft + "}",
+				"{" + newRewardsLeft + "}"
+			);
+		} else {
+			adjustedReward = arrayOfCleanedRewards[chosenReward].dirtyReward;
+		}
+		// Update rewards file
+
+		let newContents = contents.replace(
+			arrayOfCleanedRewards[chosenReward].dirtyReward,
+			adjustedReward
 		);
-		let newContents = "";
-		// vault.modify(rewardsFile, "hej");
+		vault.modify(rewardsFile, newContents);
 	}
 	async onload() {
+		this.addSettingTab(new ObsidianRewarderSettings(this.app, this));
+
 		this.registerDomEvent(document, "click", (evt: MouseEvent) => {
 			if (evt.target.className === "task-list-item-checkbox") {
 				if (evt.target.checked) {
@@ -172,5 +197,36 @@ class CongratulationsModal extends Modal {
 	onClose() {
 		const { contentEl } = this;
 		contentEl.empty();
+	}
+}
+
+class ObsidianRewarderSettings extends PluginSettingTab {
+	plugin: ObsidianRewarder;
+
+	constructor(app: App, plugin: ObsidianRewarder) {
+		super(app, plugin);
+		this.plugin = plugin;
+	}
+
+	display(): void {
+		const { containerEl } = this;
+
+		containerEl.empty();
+
+		containerEl.createEl("h2", { text: "Settings for my awesome plugin." });
+
+		new Setting(containerEl)
+			.setName("Setting #1")
+			.setDesc("It's a secret")
+			.addText((text) =>
+				text
+					.setPlaceholder("Enter your secret")
+					.setValue(this.plugin.settings.mySetting)
+					.onChange(async (value) => {
+						console.log("Secret: " + value);
+						this.plugin.settings.mySetting = value;
+						await this.plugin.saveSettings();
+					})
+			);
 	}
 }
