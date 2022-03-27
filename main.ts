@@ -1,5 +1,6 @@
 import {
 	App,
+	debounce,
 	Editor,
 	MarkdownView,
 	Modal,
@@ -20,6 +21,17 @@ const DEFAULT_SETTINGS: ObsidianRewarderSettings = {
 
 export default class ObsidianRewarder extends Plugin {
 	settings: ObsidianRewarderSettings;
+
+	observer;
+
+	eventFunction = function (self) {
+		// Taken from here: https://stackoverflow.com/questions/256754/how-to-pass-arguments-to-addeventlistener-listener-function
+		return function curried_func(evt) {
+			if (evt.target.checked) {
+				self.handleReward();
+			}
+		};
+	};
 
 	async handleReward() {
 		let arrayOfCleanedRewards = [];
@@ -44,7 +56,7 @@ export default class ObsidianRewarder extends Plugin {
 		for (let i = 0; i < dirtyRewards.length; i++) {
 			const dirtyReward = dirtyRewards[i];
 
-			let rewardsLeft = 0;
+			let rewardsLeft = 1;
 			let occurence = "";
 			let rewardName = "";
 			let firstMetadataValue;
@@ -56,7 +68,7 @@ export default class ObsidianRewarder extends Plugin {
 
 			if (firstMetadataEnd < 0) {
 				occurence = "default"; // If first metadata not found then put default values
-				rewardsLeft = false;
+				rewardsLeft = 1;
 				rewardName = dirtyReward;
 			} else {
 				firstMetadataValue = dirtyReward.substring(
@@ -86,7 +98,7 @@ export default class ObsidianRewarder extends Plugin {
 						// If second metadata not found then put default value in the one that is left
 						occurence = "default";
 					} else {
-						rewardsLeft = false;
+						rewardsLeft = 1;
 					}
 					rewardName = dirtyRewardWithoutFirstMetadata;
 				} else {
@@ -116,9 +128,12 @@ export default class ObsidianRewarder extends Plugin {
 				rewardsLeft: rewardsLeft,
 				occurence: occurence,
 			};
-			arrayOfCleanedRewards.push(rewardObject);
+			if (rewardObject.rewardsLeft > 0) {
+				// Only add reward if there is inventory
+				arrayOfCleanedRewards.push(rewardObject);
+			}
 		}
-
+		console.log(arrayOfCleanedRewards);
 		// Get random reward
 		const divideByToGetCorrectMaxRandom = 10 / arrayOfCleanedRewards.length;
 		chosenReward = Math.floor(
@@ -132,8 +147,6 @@ export default class ObsidianRewarder extends Plugin {
 				arrayOfCleanedRewards[chosenReward]
 			).open();
 		}
-
-		console.log(arrayOfCleanedRewards);
 
 		// Substract reward quantity
 		let adjustedReward;
@@ -149,25 +162,75 @@ export default class ObsidianRewarder extends Plugin {
 		} else {
 			adjustedReward = arrayOfCleanedRewards[chosenReward].dirtyReward;
 		}
-		// Update rewards file
 
+		// Update rewards file
 		let newContents = contents.replace(
 			arrayOfCleanedRewards[chosenReward].dirtyReward,
 			adjustedReward
 		);
 		vault.modify(rewardsFile, newContents);
 	}
+
 	async onload() {
+		const debounceFunction = debounce(
+			// Debounce to avoid multiple eventhandles being added
+			() => {
+				let allTasks = document.getElementsByClassName(
+					"task-list-item-checkbox"
+				);
+				for (let i = 0; i < allTasks.length; i++) {
+					allTasks[i].addEventListener(
+						"click",
+						this.eventFunction(this)
+					);
+				}
+			},
+			300,
+			true
+		);
+
+		this.app.workspace.onLayoutReady(() => {
+			// Needed to work with Obsidian-tasks since it stops propagation
+			this.observer = new MutationObserver(() => {
+				debounceFunction();
+			});
+			this.observer.observe(
+				document.getElementsByClassName("markdown-reading-view")[0],
+				{ childList: true, subtree: true }
+			);
+		});
 		this.addSettingTab(new ObsidianRewarderSettings(this.app, this));
 
-		this.registerDomEvent(document, "click", (evt: MouseEvent) => {
-			if (evt.target.className === "task-list-item-checkbox") {
-				if (evt.target.checked) {
-					this.handleReward();
-				}
-				return;
-			}
-		});
+		// let allTasks = document.getElementsByClassName(
+		// 	"task-list-item-checkbox"
+		// );
+		// allTasks[0].addEventListener("click", () =>
+		// 	console.log("eventlistener")
+		// );
+
+		// allTasks[0].onClickEvent(() => {
+		// 	console.log("heuj");
+		// });
+
+		// this.registerDomEvent(document, "click", (evt: MouseEvent) => {
+		// 	if (evt.target.className === "task-list-item-checkbox") {
+		// 		if (evt.target.checked) {
+		// 			console.log("domesvesnt");
+		// 			this.handleReward();
+		// 		}
+		// 		return;
+		// 	}
+		// });
+	}
+
+	async onunload(): void {
+		let allTasks = document.getElementsByClassName(
+			"task-list-item-checkbox"
+		);
+		this.observer.disconnect();
+		for (let i = 0; i < allTasks.length; i++) {
+			allTasks[i].removeEventListener("click", this.eventFunction);
+		}
 	}
 }
 
