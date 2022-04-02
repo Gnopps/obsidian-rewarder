@@ -10,14 +10,11 @@ import {
 	Setting,
 	ToggleComponent,
 } from "obsidian";
+import { exit } from "process";
 
-interface ObsidianRewarderSettings {
-	mySetting: string;
-}
+import { ObsidianRewarderSettings, DEFAULT_SETTINGS } from "./settings";
 
-const DEFAULT_SETTINGS: ObsidianRewarderSettings = {
-	mySetting: "default",
-};
+// Add "batch-mode" where there is only call-out when award won and then all awards are stored in daily-note or batch file
 
 export default class ObsidianRewarder extends Plugin {
 	settings: ObsidianRewarderSettings;
@@ -36,6 +33,7 @@ export default class ObsidianRewarder extends Plugin {
 	async handleReward() {
 		let arrayOfCleanedRewards = [];
 		let chosenReward;
+		let rewardsByOccurrence = {};
 
 		// Read contents of rewards file
 		const { vault } = this.app;
@@ -57,17 +55,22 @@ export default class ObsidianRewarder extends Plugin {
 			const dirtyReward = dirtyRewards[i];
 
 			let rewardsLeft = 1;
-			let occurence = "";
+			let occurrence = "";
 			let rewardName = "";
 			let firstMetadataValue;
 			let secondMetadataValue;
 			let dirtyRewardWithoutFirstMetadata = "";
 
-			let firstMetadataStart = dirtyReward.indexOf("{");
-			let firstMetadataEnd = dirtyReward.indexOf("}", firstMetadataStart);
+			let firstMetadataStart = dirtyReward.indexOf(
+				this.settings.escapeCharacterBegin
+			);
+			let firstMetadataEnd = dirtyReward.indexOf(
+				this.settings.escapeCharacterEnd,
+				firstMetadataStart
+			);
 
 			if (firstMetadataEnd < 0) {
-				occurence = "default"; // If first metadata not found then put default values
+				occurrence = this.settings.occurrenceTypes[0].label; // If first metadata not found then put default values
 				rewardsLeft = 1;
 				rewardName = dirtyReward;
 			} else {
@@ -78,25 +81,29 @@ export default class ObsidianRewarder extends Plugin {
 				if (/^\d+$/.test(firstMetadataValue)) {
 					rewardsLeft = firstMetadataValue;
 				} else {
-					occurence = firstMetadataValue;
+					occurrence = firstMetadataValue;
 				}
 
 				dirtyRewardWithoutFirstMetadata = dirtyReward.replace(
-					"{" + firstMetadataValue + "}",
+					this.settings.escapeCharacterBegin +
+						firstMetadataValue +
+						this.settings.escapeCharacterEnd,
 					""
 				);
 
 				let secondMetadataStart =
-					dirtyRewardWithoutFirstMetadata.indexOf("{");
+					dirtyRewardWithoutFirstMetadata.indexOf(
+						this.settings.escapeCharacterBegin
+					);
 				let secondMetadataEnd = dirtyRewardWithoutFirstMetadata.indexOf(
-					"}",
+					this.settings.escapeCharacterEnd,
 					secondMetadataStart
 				);
 
 				if (secondMetadataEnd < 0) {
 					if (rewardsLeft) {
 						// If second metadata not found then put default value in the one that is left
-						occurence = "default";
+						occurrence = this.settings.occurrenceTypes[0].label;
 					} else {
 						rewardsLeft = 1;
 					}
@@ -111,11 +118,13 @@ export default class ObsidianRewarder extends Plugin {
 					if (/^\d+$/.test(secondMetadataValue)) {
 						rewardsLeft = secondMetadataValue;
 					} else {
-						occurence = secondMetadataValue;
+						occurrence = secondMetadataValue;
 					}
 
 					rewardName = dirtyRewardWithoutFirstMetadata.replace(
-						"{" + secondMetadataValue + "}",
+						this.settings.escapeCharacterBegin +
+							secondMetadataValue +
+							this.settings.escapeCharacterEnd,
 						""
 					);
 				}
@@ -126,52 +135,146 @@ export default class ObsidianRewarder extends Plugin {
 					.replace(/\n|\t|\r|- |\* |\+ /g, "")
 					.trim(),
 				rewardsLeft: rewardsLeft,
-				occurence: occurence,
+				occurrence: occurrence,
 			};
 			if (rewardObject.rewardsLeft > 0) {
 				// Only add reward if there is inventory
 				arrayOfCleanedRewards.push(rewardObject);
+
+				if (rewardsByOccurrence.hasOwnProperty(occurrence)) {
+					rewardsByOccurrence[occurrence].push(rewardObject);
+				} else {
+					rewardsByOccurrence[occurrence] = [];
+					rewardsByOccurrence[occurrence].push(rewardObject);
+				}
 			}
 		}
-		console.log(arrayOfCleanedRewards);
-		// Get random reward
-		const divideByToGetCorrectMaxRandom = 10 / arrayOfCleanedRewards.length;
-		chosenReward = Math.floor(
-			(Math.random() * 10) / divideByToGetCorrectMaxRandom
-		);
-		if (chosenReward === 99) {
-			new Notice("This is a notice!");
+
+		// Check what reward types are active and how many of each, for chance calculation
+
+		let foundOccurenceTypes = {
+			[this.settings.occurrenceTypes[0].label]: 0,
+			[this.settings.occurrenceTypes[1].label]: 0,
+			[this.settings.occurrenceTypes[2].label]: 0,
+		};
+
+		for (let i = 0; i < arrayOfCleanedRewards.length; i++) {
+			foundOccurenceTypes[arrayOfCleanedRewards[i].occurrence] =
+				foundOccurenceTypes[arrayOfCleanedRewards[i].occurrence] + 1;
+		}
+
+		// See if we won a reward
+
+		let sumOfOccurrences = 0;
+
+		for (let i = 0; i < this.settings.occurrenceTypes.length; i++) {
+			if (
+				foundOccurenceTypes[this.settings.occurrenceTypes[i].label] > 0
+			) {
+				sumOfOccurrences += this.settings.occurrenceTypes[i].value;
+			}
+		}
+		if (sumOfOccurrences > 100) {
+			// Need to convert so total is no more than 100%
+			const divideByThisToGetTo100 = sumOfOccurrences / 100;
+
+			for (
+				let i = 0;
+				i < Object.keys(this.plugin.settings.occurrenceTypes).length;
+				i++
+			) {
+				this.settings.occurrenceTypes[i].value =
+					this.settings.occurrenceTypes[i].value /
+					divideByThisToGetTo100;
+			}
+			sumOfOccurrences = this.settings.occurrenceTypes.reduce(
+				(partialSum, a) => partialSum + a,
+				0
+			);
+		}
+
+		sumOfOccurrences = sumOfOccurrences * 10; // To skip decimal numbers
+
+		const lotteryNumber = Math.floor(Math.random() * 1000);
+
+		if (lotteryNumber > sumOfOccurrences) {
+			// Did not get a reward
+			return;
+		}
+
+		// Get the reward
+
+		const objectOfOccurrences = {};
+		for (let i = 0; i < this.settings.occurrenceTypes.length; i++) {
+			objectOfOccurrences[this.settings.occurrenceTypes[i].label] =
+				this.settings.occurrenceTypes[i].value;
+		}
+		const arrayOfOccurrences = Object.keys(foundOccurenceTypes);
+
+		let checkedProbabilities = 0;
+
+		for (let i = 0; i < arrayOfOccurrences.length; i++) {
+			if (
+				foundOccurenceTypes[arrayOfOccurrences[i]] > 0 &&
+				lotteryNumber <
+					objectOfOccurrences[arrayOfOccurrences[i]] * 10 +
+						checkedProbabilities
+			) {
+				// Choose a reward among the ones within the same occurrence category
+				const randomNumberToChooseRewardWithinOccurence = Math.floor(
+					Math.random() * foundOccurenceTypes[arrayOfOccurrences[i]]
+				);
+				chosenReward =
+					rewardsByOccurrence[arrayOfOccurrences[i]][
+						randomNumberToChooseRewardWithinOccurence
+					];
+				break;
+			}
+			checkedProbabilities =
+				checkedProbabilities +
+				objectOfOccurrences[arrayOfOccurrences[i]] * 10;
+		}
+
+		// Show notification
+		if (this.settings.showModal) {
+			new CongratulationsModal(this.app, chosenReward).open();
 		} else {
-			new CongratulationsModal(
-				this.app,
-				arrayOfCleanedRewards[chosenReward]
-			).open();
+			const stringToShow =
+				"🎈 🎉 🎈 Congratulations! 🎈 🎉 🎈\nBy completing this task you won this reward:\n " +
+				"⭐ " +
+				chosenReward.rewardName +
+				" ⭐";
+			new Notice(stringToShow);
 		}
 
 		// Substract reward quantity
+
 		let adjustedReward;
-		if (arrayOfCleanedRewards[chosenReward].rewardsLeft) {
-			let newRewardsLeft =
-				arrayOfCleanedRewards[chosenReward].rewardsLeft - 1;
-			adjustedReward = arrayOfCleanedRewards[
-				chosenReward
-			].dirtyReward.replace(
-				"{" + arrayOfCleanedRewards[chosenReward].rewardsLeft + "}",
-				"{" + newRewardsLeft + "}"
+		if (chosenReward.rewardsLeft) {
+			let newRewardsLeft = chosenReward.rewardsLeft - 1;
+			adjustedReward = chosenReward.dirtyReward.replace(
+				this.settings.escapeCharacterBegin +
+					chosenReward.rewardsLeft +
+					this.settings.escapeCharacterEnd,
+				this.settings.escapeCharacterBegin +
+					newRewardsLeft +
+					this.settings.escapeCharacterEnd
 			);
 		} else {
-			adjustedReward = arrayOfCleanedRewards[chosenReward].dirtyReward;
+			adjustedReward = chosenReward.dirtyReward;
 		}
 
 		// Update rewards file
 		let newContents = contents.replace(
-			arrayOfCleanedRewards[chosenReward].dirtyReward,
+			chosenReward.dirtyReward,
 			adjustedReward
 		);
 		vault.modify(rewardsFile, newContents);
 	}
 
 	async onload() {
+		await this.loadSettings();
+
 		const debounceFunction = debounce(
 			// Debounce to avoid multiple eventhandles being added
 			() => {
@@ -200,30 +303,10 @@ export default class ObsidianRewarder extends Plugin {
 			);
 		});
 		this.addSettingTab(new ObsidianRewarderSettings(this.app, this));
-
-		// let allTasks = document.getElementsByClassName(
-		// 	"task-list-item-checkbox"
-		// );
-		// allTasks[0].addEventListener("click", () =>
-		// 	console.log("eventlistener")
-		// );
-
-		// allTasks[0].onClickEvent(() => {
-		// 	console.log("heuj");
-		// });
-
-		// this.registerDomEvent(document, "click", (evt: MouseEvent) => {
-		// 	if (evt.target.className === "task-list-item-checkbox") {
-		// 		if (evt.target.checked) {
-		// 			console.log("domesvesnt");
-		// 			this.handleReward();
-		// 		}
-		// 		return;
-		// 	}
-		// });
 	}
 
 	async onunload(): void {
+		// Remove event listeners
 		let allTasks = document.getElementsByClassName(
 			"task-list-item-checkbox"
 		);
@@ -231,6 +314,18 @@ export default class ObsidianRewarder extends Plugin {
 		for (let i = 0; i < allTasks.length; i++) {
 			allTasks[i].removeEventListener("click", this.eventFunction);
 		}
+	}
+
+	async loadSettings() {
+		this.settings = Object.assign(
+			{},
+			DEFAULT_SETTINGS,
+			await this.loadData()
+		);
+	}
+
+	async saveSettings() {
+		await this.saveData(this.settings);
 	}
 }
 
@@ -260,36 +355,5 @@ class CongratulationsModal extends Modal {
 	onClose() {
 		const { contentEl } = this;
 		contentEl.empty();
-	}
-}
-
-class ObsidianRewarderSettings extends PluginSettingTab {
-	plugin: ObsidianRewarder;
-
-	constructor(app: App, plugin: ObsidianRewarder) {
-		super(app, plugin);
-		this.plugin = plugin;
-	}
-
-	display(): void {
-		const { containerEl } = this;
-
-		containerEl.empty();
-
-		containerEl.createEl("h2", { text: "Settings for my awesome plugin." });
-
-		new Setting(containerEl)
-			.setName("Setting #1")
-			.setDesc("It's a secret")
-			.addText((text) =>
-				text
-					.setPlaceholder("Enter your secret")
-					.setValue(this.plugin.settings.mySetting)
-					.onChange(async (value) => {
-						console.log("Secret: " + value);
-						this.plugin.settings.mySetting = value;
-						await this.plugin.saveSettings();
-					})
-			);
 	}
 }
