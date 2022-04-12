@@ -1,3 +1,11 @@
-.rewarderModal {
-	text-align: center;
+.rewarderModal h1 {
+	text-align: center !important;
+}
+
+.rewarderModal h2 {
+	text-align: center !important;
+}
+
+.rewarderModal p {
+	text-align: center !important;
 }

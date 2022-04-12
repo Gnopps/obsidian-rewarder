@@ -76,9 +76,7 @@ export class ObsidianRewarderSettings extends PluginSettingTab {
 
 		new Setting(this.containerEl)
 			.setName("Use with quotes instead of rewards")
-			.setDesc(
-				"Treat each reward as an inspirational quote instead of reward"
-			)
+			.setDesc("Rewards are shown as inspirational quotes instead.")
 			.addToggle((toggle) => {
 				toggle.setValue(this.plugin.settings.useAsInspirational);
 				toggle.onChange(async (value) => {

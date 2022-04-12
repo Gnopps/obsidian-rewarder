@@ -394,10 +394,7 @@ class CongratulationsModal extends Modal {
 				text: this.rewardObject.rewardName,
 			});
 		} else {
-			modal.createEl("h1", {
-				text: "🎈 🎉 🎈",
-			});
-			modal.createEl("h1", {
+			modal.createEl("h2", {
 				text: "Congratulations!",
 			});
 			modal.createEl("p", {
@@ -406,6 +403,9 @@ class CongratulationsModal extends Modal {
 			modal.createEl("h1", {
 				text: "⭐ " + this.rewardObject.rewardName + " ⭐",
 				cls: "rewardName",
+			});
+			modal.createEl("h2", {
+				text: "🎈 🎉 🎈",
 			});
 		}
 	}
