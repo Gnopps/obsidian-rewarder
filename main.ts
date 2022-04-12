@@ -337,13 +337,18 @@ export default class ObsidianRewarder extends Plugin {
 
 		this.app.workspace.onLayoutReady(() => {
 			// Needed to work with Obsidian-tasks since it stops propagation
-			this.observer = new MutationObserver(() => {
-				debounceFunction();
-			});
-			this.observer.observe(
-				document.getElementsByClassName("markdown-reading-view")[0],
-				{ childList: true, subtree: true }
-			);
+
+			function addObserver() {
+				this.observer = new MutationObserver(() => {
+					debounceFunction();
+				});
+				this.observer.observe(
+					document.getElementsByClassName("markdown-reading-view")[0],
+					{ childList: true, subtree: true }
+				);
+			}
+
+			window.setTimeout(addObserver, 1000); // Need to add delay as onLayoutReady isn't always enough
 		});
 		this.addSettingTab(new ObsidianRewarderSettings(this.app, this));
 	}
