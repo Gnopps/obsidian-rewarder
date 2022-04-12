@@ -15,7 +15,9 @@ export interface ObsidianRewarderSettings {
 	escapeCharacterBegin: string;
 	escapeCharacterEnd: string;
 	occurrenceTypes: Array<object>;
+	saveToDaily: boolean;
 	showModal: boolean;
+	useAsInspirational: boolean;
 }
 
 export const DEFAULT_SETTINGS: ObsidianRewarderSettings = {
@@ -26,7 +28,9 @@ export const DEFAULT_SETTINGS: ObsidianRewarderSettings = {
 		{ label: "rare", value: 5 },
 		{ label: "legendary", value: 0.5 },
 	],
+	saveToDaily: false,
 	showModal: true,
+	useAsInspirational: false,
 };
 
 export class ObsidianRewarderSettings extends PluginSettingTab {
@@ -41,6 +45,8 @@ export class ObsidianRewarderSettings extends PluginSettingTab {
 		const { containerEl } = this;
 
 		containerEl.empty();
+
+		// Settings for functionality
 
 		containerEl.createEl("h1", { text: "Functionality settings" });
 
@@ -57,7 +63,31 @@ export class ObsidianRewarderSettings extends PluginSettingTab {
 				});
 			});
 
-		containerEl.createEl("h1", { text: "Rewards settings" });
+		new Setting(this.containerEl)
+			.setName("Save rewards in daily note")
+			.setDesc("Will save rewards received to the end of the daily note")
+			.addToggle((toggle) => {
+				toggle.setValue(this.plugin.settings.saveToDaily);
+				toggle.onChange(async (value) => {
+					this.plugin.settings.saveToDaily = value;
+					await this.plugin.saveSettings();
+				});
+			});
+
+		new Setting(this.containerEl)
+			.setName("Use with quotes instead of rewards")
+			.setDesc(
+				"Treat each reward as an inspirational quote instead of reward"
+			)
+			.addToggle((toggle) => {
+				toggle.setValue(this.plugin.settings.useAsInspirational);
+				toggle.onChange(async (value) => {
+					this.plugin.settings.useAsInspirational = value;
+					await this.plugin.saveSettings();
+				});
+			});
+
+		containerEl.createEl("h1", { text: "Reward settings" });
 
 		// Settings for occurence
 
@@ -161,6 +191,7 @@ export class ObsidianRewarderSettings extends PluginSettingTab {
 		}
 
 		// Settings for escape characters
+
 		containerEl.createEl("h3", {
 			text: "Special characters",
 		});

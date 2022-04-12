@@ -4,6 +4,7 @@ import {
 	Editor,
 	MarkdownView,
 	Modal,
+	moment,
 	Notice,
 	Plugin,
 	PluginSettingTab,
@@ -12,9 +13,26 @@ import {
 } from "obsidian";
 import { exit } from "process";
 
+import { appHasDailyNotesPluginLoaded } from "obsidian-daily-notes-interface";
+import {
+	getDailyNote,
+	createDailyNote,
+	getAllDailyNotes,
+} from "obsidian-daily-notes-interface";
+
 import { ObsidianRewarderSettings, DEFAULT_SETTINGS } from "./settings";
 
 // Add "batch-mode" where there is only call-out when award won and then all awards are stored in daily-note or batch file
+
+export async function getDailyNoteFile(): Promise<TFile> {
+	const file = getDailyNote(moment(), getAllDailyNotes());
+
+	if (!file) {
+		return await createDailyNote(moment());
+	}
+
+	return file;
+}
 
 export default class ObsidianRewarder extends Plugin {
 	settings: ObsidianRewarderSettings;
@@ -180,7 +198,7 @@ export default class ObsidianRewarder extends Plugin {
 
 			for (
 				let i = 0;
-				i < Object.keys(this.plugin.settings.occurrenceTypes).length;
+				i < Object.keys(this.settings.occurrenceTypes).length;
 				i++
 			) {
 				this.settings.occurrenceTypes[i].value =
@@ -236,14 +254,20 @@ export default class ObsidianRewarder extends Plugin {
 		}
 
 		// Show notification
+
 		if (this.settings.showModal) {
-			new CongratulationsModal(this.app, chosenReward).open();
+			new CongratulationsModal(
+				this.app,
+				chosenReward,
+				this.settings.useAsInspirational
+			).open();
 		} else {
-			const stringToShow =
-				"🎈 🎉 🎈 Congratulations! 🎈 🎉 🎈\nBy completing this task you won this reward:\n " +
-				"⭐ " +
-				chosenReward.rewardName +
-				" ⭐";
+			const stringToShow = this.settings.useAsInspirational
+				? chosenReward.rewardName
+				: "🎈 🎉 🎈 Congratulations! 🎈 🎉 🎈\nBy completing this task you won this reward:\n " +
+				  "⭐ " +
+				  chosenReward.rewardName +
+				  " ⭐";
 			new Notice(stringToShow);
 		}
 
@@ -265,11 +289,30 @@ export default class ObsidianRewarder extends Plugin {
 		}
 
 		// Update rewards file
+
 		let newContents = contents.replace(
 			chosenReward.dirtyReward,
 			adjustedReward
 		);
 		vault.modify(rewardsFile, newContents);
+
+		// Log to daily note, partly taken from https://github.com/kzhovn/statusbar-pomo-obsidian/blob/master/src/timer.ts
+
+		const logText = "Earned reward: " + chosenReward.rewardName;
+
+		if (
+			this.settings.saveToDaily === true &&
+			appHasDailyNotesPluginLoaded() === true
+		) {
+			let file = (await getDailyNoteFile()).path;
+			//from Note Refactor plugin by James Lynch, https://github.com/lynchjames/note-refactor-obsidian/blob/80c1a23a1352b5d22c70f1b1d915b4e0a1b2b33f/src/obsidian-file.ts#L69
+
+			let existingContent = await this.app.vault.adapter.read(file);
+			if (existingContent.length > 0) {
+				existingContent = existingContent + "\r";
+			}
+			await this.app.vault.adapter.write(file, existingContent + logText);
+		}
 	}
 
 	async onload() {
@@ -330,26 +373,36 @@ export default class ObsidianRewarder extends Plugin {
 }
 
 class CongratulationsModal extends Modal {
-	constructor(app: App, public rewardObject: any) {
+	constructor(
+		app: App,
+		public rewardObject: any,
+		public useAsInspirational: boolean
+	) {
 		super(app);
 	}
 
 	onOpen() {
 		const { contentEl, containerEl } = this;
 		const modal = contentEl.createEl("div", { cls: "rewarderModal" });
-		modal.createEl("h1", {
-			text: "🎈 🎉 🎈",
-		});
-		modal.createEl("h1", {
-			text: "Congratulations!",
-		});
-		modal.createEl("p", {
-			text: "By completing this task you won this reward:",
-		});
-		modal.createEl("h1", {
-			text: "⭐ " + this.rewardObject.rewardName + " ⭐",
-			cls: "rewardName",
-		});
+		if (this.useAsInspirational) {
+			modal.createEl("h1", {
+				text: this.rewardObject.rewardName,
+			});
+		} else {
+			modal.createEl("h1", {
+				text: "🎈 🎉 🎈",
+			});
+			modal.createEl("h1", {
+				text: "Congratulations!",
+			});
+			modal.createEl("p", {
+				text: "By completing this task you won this reward:",
+			});
+			modal.createEl("h1", {
+				text: "⭐ " + this.rewardObject.rewardName + " ⭐",
+				cls: "rewardName",
+			});
+		}
 	}
 
 	onClose() {
