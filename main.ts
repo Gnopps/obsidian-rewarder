@@ -37,12 +37,15 @@ export async function getDailyNoteFile(): Promise<TFile> {
 export default class ObsidianRewarder extends Plugin {
 	settings: ObsidianRewarderSettings;
 
-	observer;
+	functionReference; // To be able to remove eventlistener: https://stackoverflow.com/questions/65379045/remove-event-listener-with-an-anonymous-function-with-a-local-scope-variable
 
 	eventFunction = function (self) {
+		console.log("evet");
 		// Taken from here: https://stackoverflow.com/questions/256754/how-to-pass-arguments-to-addeventlistener-listener-function
-		return function curried_func(evt) {
+		return function curriedFunction(evt) {
+			console.log("inside curry");
 			if (evt.target.checked) {
+				console.log("checked");
 				self.handleReward();
 			}
 		};
@@ -55,7 +58,9 @@ export default class ObsidianRewarder extends Plugin {
 
 		// Read contents of rewards file
 		const { vault } = this.app;
-		let rewardsFile = vault.getAbstractFileByPath("Rewards.md");
+		let rewardsFile = vault.getAbstractFileByPath(
+			this.settings.rewardsFile
+		);
 		const contents = await this.app.vault.read(rewardsFile);
 		var char = "\n";
 		let x = 0;
@@ -318,50 +323,24 @@ export default class ObsidianRewarder extends Plugin {
 	async onload() {
 		await this.loadSettings();
 
-		const debounceFunction = debounce(
-			// Debounce to avoid multiple eventhandles being added
-			() => {
-				let allTasks = document.getElementsByClassName(
-					"task-list-item-checkbox"
-				);
-				for (let i = 0; i < allTasks.length; i++) {
-					allTasks[i].addEventListener(
-						"click",
-						this.eventFunction(this)
-					);
-				}
-			},
-			300,
-			true
-		);
-
-		this.app.workspace.onLayoutReady(() => {
-			// Needed to work with Obsidian-tasks since it stops propagation
-
-			function addObserver() {
-				this.observer = new MutationObserver(() => {
-					debounceFunction();
-				});
-				this.observer.observe(
-					document.getElementsByClassName("markdown-reading-view")[0],
-					{ childList: true, subtree: true }
-				);
-			}
-
-			window.setTimeout(addObserver, 1000); // Need to add delay as onLayoutReady isn't always enough
-		});
 		this.addSettingTab(new ObsidianRewarderSettings(this.app, this));
+
+		window.addEventListener(
+			"click",
+			(this.functionReference = this.eventFunction(this)),
+			{
+				capture: true,
+			}
+		);
 	}
 
 	async onunload(): void {
 		// Remove event listeners
-		let allTasks = document.getElementsByClassName(
-			"task-list-item-checkbox"
-		);
-		this.observer.disconnect();
-		for (let i = 0; i < allTasks.length; i++) {
-			allTasks[i].removeEventListener("click", this.eventFunction);
-		}
+		const a = 881988;
+		console.log(this.eventFunction);
+		window.removeEventListener("click", this.functionReference, {
+			capture: true,
+		});
 	}
 
 	async loadSettings() {

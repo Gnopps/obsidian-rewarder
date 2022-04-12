@@ -5,6 +5,7 @@ import {
 	MarkdownView,
 	Modal,
 	Notice,
+	normalizePath,
 	Plugin,
 	PluginSettingTab,
 	Setting,
@@ -15,6 +16,7 @@ export interface ObsidianRewarderSettings {
 	escapeCharacterBegin: string;
 	escapeCharacterEnd: string;
 	occurrenceTypes: Array<object>;
+	rewardsFile: string;
 	saveToDaily: boolean;
 	showModal: boolean;
 	useAsInspirational: boolean;
@@ -28,6 +30,7 @@ export const DEFAULT_SETTINGS: ObsidianRewarderSettings = {
 		{ label: "rare", value: 5 },
 		{ label: "legendary", value: 0.5 },
 	],
+	rewardsFile: "hej.md",
 	saveToDaily: false,
 	showModal: true,
 	useAsInspirational: false,
@@ -41,6 +44,14 @@ export class ObsidianRewarderSettings extends PluginSettingTab {
 		this.plugin = plugin;
 	}
 
+	sanitiseNote(value: string): string {
+		// Taken from homepage plugin
+		if (value === null || value.match(/^\s*$/) !== null) {
+			return null;
+		}
+		return normalizePath(value);
+	}
+
 	display(): void {
 		const { containerEl } = this;
 
@@ -49,6 +60,20 @@ export class ObsidianRewarderSettings extends PluginSettingTab {
 		// Settings for functionality
 
 		containerEl.createEl("h1", { text: "Functionality settings" });
+
+		new Setting(this.containerEl)
+			.setName("File with Rewards")
+			.setDesc("Will be created if doesn't exist")
+			.addText((text) => {
+				text.setPlaceholder(DEFAULT_SETTINGS.rewardsFile)
+					.setValue(this.plugin.settings.rewardsFile)
+					.onChange(async (value) => {
+						this.plugin.settings.rewardsFile =
+							this.sanitiseNote(value) ||
+							DEFAULT_SETTINGS.rewardsFile;
+						await this.plugin.saveSettings();
+					});
+			});
 
 		new Setting(this.containerEl)
 			.setName("Show popup when reward is awarded")
