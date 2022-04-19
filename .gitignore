@@ -20,3 +20,14 @@ data.json
 
 # Exclude macOS Finder (System Explorer) View States
 .DS_Store
+
+# My own
+.editorconfig
+.eslintignore
+.eslintrc
+.gitignore
+.npmrc
+esbuild.config.mjs
+tsconfig.json
+version-bump.mjs
+versions.json 
