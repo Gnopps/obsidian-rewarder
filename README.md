@@ -1,72 +1,55 @@
-## Obsidian Sample Plugin
+## Obsidian Rewarder
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+### Intro
 
-This project uses Typescript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in Typescript Definition format, which contains TSDoc comments describing what it does.
+This is a plugin to reward yourself when you complete tasks.
 
-**Note:** The Obsidian API is still in early alpha and is subject to change at any time!
+### Getting started
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
-- Changes the default font color to red using `styles.css`.
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open Sample Modal" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and output 'click' to the console.
-- Registers a global interval which logs 'setInterval' to the console.
+1. List your available rewards. Do this with one reward per row in a separate file. By default this is "Rewards.md", but this can be changed to any file in the settings. If you want to get started quickly you can run the command "Create sample rewards note" to create an example rewards file.
+2. Complete a task by clicking its check-box. Obsidian Rewarded will now randomly determine if you should get a reward and if so, which. You'll be notified with a message in Obsidian.
 
-### First time developing plugins?
+### Configurating rewards
 
-Quick starting guide for new plugin devs:
+Each reward has two optional settings:
 
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `main.ts` to `main.js`.
-- Make changes to `main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
+-   _Occurence_: This defines how often a reward should occur. You may want the reward "Eat candy" occur more often than "Buy a new car". There are three different occurence-levels, by default these are "common", "rare" and "legendary". In the settings it possible to change both the name and rate of each occurence. If not specified, this defaults to "common".
+-   _Inventory_: This defines how many items of each rewards are available. If you have a "Eat candy"-reward but only have 5 candies, then you may want to set the maximum number this reward can occur to 5. Every time this reward is given the inventory will automatically be substracted by 1 in the rewards-file. If not specified, this defaults to unlimited.
 
-### Releasing new releases
+Reward settings are inserted by adding a number and/or occurence within double-brackets on the same row as the reward. If you prefer, double-brackets can be replcaed with something else in settings. For examaple:
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
+> Eat candy
+> This reward will be common and never run out
 
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
+> Eat cake {4}
+> This reward will be common and run out once it has been awarded 4 times
 
-### Adding your plugin to the community plugin list
+> Have a nap {rare}
+> This reward will occur rarely but will never run out
 
-- Check https://github.com/obsidianmd/obsidian-releases/blob/master/plugin-review.md
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
+> Have a beer {rare} {5}
+> This reward will occur rarely and will run out once it has been awarded 5 times
 
-### How to use
+### Settings
 
-- Clone this repo.
-- `npm i` or `yarn` to install dependencies
-- `npm run dev` to start compilation in watch mode.
+The following configuration options are possible
 
-### Manually installing the plugin
+#### Functionality settings
 
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
+-   _File with rewards_: The file (including folder if applicable) where the rewards are stored. Defaults to "Rewards.md".
+-   _Show popup when reward is awarded_: If activated a popup (modal) will be shown when a reward is awarded, you'll need to close this before you can continue your work. If deactivated only a timed notice will be shown.
+-   _Save rewards in daily note_: When active will amend any rewards received to the end of your daily note, one row per awarded reward.
+-   _Use with quotes instead of rewards_: Activate this if you are working with inspirational quotes instead of rewards. When active, your rewards are showing without any congratulations or other added text.
 
-### Improve code quality with eslint (optional)
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code. 
-- To use eslint with this project, make sure to install eslint from terminal:
-  - `npm install -g eslint`
-- To use eslint to analyze this project use this command:
-  - `eslint main.ts`
-  - eslint will then create a report with suggestions for code improvement by file and line number.
-- If your source code is in a folder, such as `src`, you can use eslint with this command to analyze all files in that folder:
-  - `eslint .\src\`
+#### Reward settings
 
+-   _Occurence values_: Defines the chance of a reward with the occurence to be given. A setting of "20" means that on average, this reward occurence will be given 20% of the time. The chance that _any_ reward is given is the sum of the three values given here.
+-   _Occurence labels_: Allows you to rename the default occurence names.
 
-### API Documentation
+#### Special characters settings
 
-See https://github.com/obsidianmd/obsidian-api
+-   _Start/End of metadata_: Allows you to set another character to define between what characters your rewards have the data of occurence. Defaults to "{" and "}".
+
+### Commands
+
+-   _Create sample rewards note_: This will create a file called "Rewards.md" with example rewards.
