@@ -2,13 +2,13 @@
 
 ### Intro
 
-This is a plugin to reward yourself when you complete tasks. Rewards can be given for every task or at random intervals.
+This is a plugin to reward yourself when you complete tasks. Rewards can be given for every task or at random intervals. Given rewards can be stored in your daily note.
 
 ![Example of completing a task](https://raw.githubusercontent.com/Gnopps/obsidian-rewarder/master/Example.gif)
 
 ### Getting started
 
-1. List your available rewards. Do this with one reward per row in a separate file. By default this is "Rewards.md", but this can be changed to any file in the settings. If you want to get started quickly you can run the command "Create sample rewards note" to create an example rewards file.
+1. List your available rewards. Do this with one reward per row in a separate file. By default this is "Rewards.md", but this can be changed to any file in the settings. If you want to get started quickly you can run the command _Create sample rewards note_ to create an example rewards file.
 
 Example file content:
 
@@ -17,16 +17,16 @@ Example file content:
 > -   Knit for 15 minutes {rare}
 > -   Open the birthday present champagne bottle {legendary} {1}
 
-2. Complete a task by clicking its check-box. Obsidian Rewarded will now randomly determine if you should get a reward and if so, which. You'll be notified with a message in Obsidian.
+2. Complete a task by clicking its checkbox. Obsidian Reward will now randomly determine if you should get a reward and if so, which. You'll be notified with a message in Obsidian.
 
 ### Configurating rewards
 
 Each reward has two optional settings:
 
--   _Occurence_: This defines how often a reward should occur. You may want the reward "Eat candy" occur more often than "Buy a new car". There are three different occurence-levels, by default these are "common", "rare" and "legendary". In the settings it possible to change both the name and rate of each occurence. If not specified, this defaults to "common".
+-   _Occurence_: This defines how often a reward should occur. You may want the reward "Eat candy" occur more often than "Buy a bottle of champagne". There are three different occurence-levels, by default these are "common", "rare" and "legendary". In the settings it possible to change both the name and chance of each occurence. If not specified, this defaults to "common".
 -   _Inventory_: This defines how many items of each rewards are available. If you have a "Eat candy"-reward but only have 5 candies, then you may want to set the maximum number this reward can occur to 5. Every time this reward is given the inventory will automatically be substracted by 1 in the rewards-file. If not specified, this defaults to unlimited.
 
-Reward settings are inserted by adding a number and/or occurence within double-brackets on the same row as the reward. If you prefer, double-brackets can be replcaed with something else in settings. For examaple:
+Reward settings are inserted by adding a number and/or occurence within double-brackets on the same row as the reward. If you prefer, double-brackets can be replcaed with something else in settings. For example:
 
 > Eat candy
 
