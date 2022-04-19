@@ -40,12 +40,9 @@ export default class ObsidianRewarder extends Plugin {
 	functionReference; // To be able to remove eventlistener: https://stackoverflow.com/questions/65379045/remove-event-listener-with-an-anonymous-function-with-a-local-scope-variable
 
 	eventFunction = function (self) {
-		console.log("evet");
 		// Taken from here: https://stackoverflow.com/questions/256754/how-to-pass-arguments-to-addeventlistener-listener-function
 		return function curriedFunction(evt) {
-			console.log("inside curry");
 			if (evt.target.checked) {
-				console.log("checked");
 				self.handleReward();
 			}
 		};
@@ -61,7 +58,17 @@ export default class ObsidianRewarder extends Plugin {
 		let rewardsFile = vault.getAbstractFileByPath(
 			this.settings.rewardsFile
 		);
-		const contents = await this.app.vault.read(rewardsFile);
+
+		let contents;
+
+		try {
+			contents = await this.app.vault.read(rewardsFile);
+		} catch {
+			new Notice(
+				"Obsidian Rewards couldn't open the rewards file.\nPlease check the path in the settings."
+			);
+			return;
+		}
 		var char = "\n";
 		let x = 0;
 		let y = 0;
@@ -299,7 +306,11 @@ export default class ObsidianRewarder extends Plugin {
 			chosenReward.dirtyReward,
 			adjustedReward
 		);
-		vault.modify(rewardsFile, newContents);
+		try {
+			vault.modify(rewardsFile, newContents);
+		} catch {
+			new Notice("Obsidian Rewards couldn't modify the rewards file.");
+		}
 
 		// Log to daily note, partly taken from https://github.com/kzhovn/statusbar-pomo-obsidian/blob/master/src/timer.ts
 
@@ -320,12 +331,55 @@ export default class ObsidianRewarder extends Plugin {
 		}
 	}
 
+	async createSampleNote(self) {
+		// Creates a sample note of rewards using the user's settings
+		let folder = app.fileManager.getNewFileParent("");
+		const createdNote = await app.fileManager.createNewMarkdownFile(
+			folder,
+			"Rewards.md"
+		);
+		const sampleContentsForNote =
+			"- Have a cup of tea" +
+			"\n- Watch an episode of favourite series " +
+			self.settings.escapeCharacterBegin +
+			self.settings.occurrenceTypes[1].label +
+			self.settings.escapeCharacterEnd +
+			" " +
+			self.settings.escapeCharacterBegin +
+			"20" +
+			self.settings.escapeCharacterEnd +
+			"\n- Knit for 15 minutes " +
+			self.settings.escapeCharacterBegin +
+			self.settings.occurrenceTypes[1].label +
+			self.settings.escapeCharacterEnd +
+			" " +
+			"\n- Open the birthday present champagne bottle " +
+			self.settings.escapeCharacterBegin +
+			self.settings.occurrenceTypes[2].label +
+			self.settings.escapeCharacterEnd +
+			" " +
+			self.settings.escapeCharacterBegin +
+			"1" +
+			self.settings.escapeCharacterEnd;
+		app.vault.modify(createdNote, sampleContentsForNote);
+		new Notice("Created file " + createdNote.path);
+	}
+
 	async onload() {
 		await this.loadSettings();
 
 		this.addSettingTab(new ObsidianRewarderSettings(this.app, this));
 
+		this.addCommand({
+			id: "create-sample-rewards-note",
+			name: "Create sample rewards note",
+			callback: () => {
+				this.createSampleNote(this);
+			},
+		});
+
 		window.addEventListener(
+			// Adding like this instead of registerDomEvent as can't use the "capture"-option with it. Capture needed as Obsidian-tasks stops propagation.
 			"click",
 			(this.functionReference = this.eventFunction(this)),
 			{
@@ -336,8 +390,6 @@ export default class ObsidianRewarder extends Plugin {
 
 	async onunload(): void {
 		// Remove event listeners
-		const a = 881988;
-		console.log(this.eventFunction);
 		window.removeEventListener("click", this.functionReference, {
 			capture: true,
 		});

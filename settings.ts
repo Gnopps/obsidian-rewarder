@@ -30,7 +30,7 @@ export const DEFAULT_SETTINGS: ObsidianRewarderSettings = {
 		{ label: "rare", value: 5 },
 		{ label: "legendary", value: 0.5 },
 	],
-	rewardsFile: "hej.md",
+	rewardsFile: "Rewards.md",
 	saveToDaily: false,
 	showModal: true,
 	useAsInspirational: false,
@@ -63,10 +63,14 @@ export class ObsidianRewarderSettings extends PluginSettingTab {
 
 		new Setting(this.containerEl)
 			.setName("File with Rewards")
-			.setDesc("Will be created if doesn't exist")
+			.setDesc('For example "Rewards.md" or "Folder/Rewards.md"')
 			.addText((text) => {
 				text.setPlaceholder(DEFAULT_SETTINGS.rewardsFile)
-					.setValue(this.plugin.settings.rewardsFile)
+					.setValue(
+						this.plugin.settings.rewardsFile.length > 0
+							? this.plugin.settings.rewardsFile
+							: ""
+					)
 					.onChange(async (value) => {
 						this.plugin.settings.rewardsFile =
 							this.sanitiseNote(value) ||
@@ -101,7 +105,9 @@ export class ObsidianRewarderSettings extends PluginSettingTab {
 
 		new Setting(this.containerEl)
 			.setName("Use with quotes instead of rewards")
-			.setDesc("Rewards are shown as inspirational quotes instead.")
+			.setDesc(
+				"Rewards are shown as inspirational quotes instead of congratulations"
+			)
 			.addToggle((toggle) => {
 				toggle.setValue(this.plugin.settings.useAsInspirational);
 				toggle.onChange(async (value) => {
@@ -140,21 +146,27 @@ export class ObsidianRewarderSettings extends PluginSettingTab {
 					text.setPlaceholder(
 						this.plugin.settings.occurrenceTypes[i].value
 					)
-						.setValue(this.plugin.settings.occurrenceTypes[i].value)
+						.setValue(
+							this.plugin.settings.occurrenceTypes[
+								i
+							].value.toString()
+						)
 						.onChange(async (value) => {
-							let refreshDisplay = false;
-							if (value > 100) {
-								value = 100;
-								refreshDisplay = true;
-							} else if (value < 0.1) {
-								value = 0.1;
-								refreshDisplay = true;
-							}
-							this.plugin.settings.occurrenceTypes[i].value =
-								Number(value);
-							await this.plugin.saveSettings();
-							if (refreshDisplay) {
-								this.display();
+							if (value.length > 0) {
+								let refreshDisplay = false;
+								if (value > 100) {
+									value = 100;
+									refreshDisplay = true;
+								} else if (value < 0.1) {
+									value = 0.1;
+									refreshDisplay = true;
+								}
+								this.plugin.settings.occurrenceTypes[i].value =
+									Number(value);
+								await this.plugin.saveSettings();
+								if (refreshDisplay) {
+									this.display();
+								}
 							}
 						});
 				})
@@ -195,9 +207,11 @@ export class ObsidianRewarderSettings extends PluginSettingTab {
 					)
 						.setValue(this.plugin.settings.occurrenceTypes[i].label)
 						.onChange(async (value) => {
-							this.plugin.settings.occurrenceTypes[i].label =
-								value;
-							await this.plugin.saveSettings();
+							if (value.length > 0) {
+								this.plugin.settings.occurrenceTypes[i].label =
+									value;
+								await this.plugin.saveSettings();
+							}
 						});
 				})
 				.addExtraButton((button) =>
@@ -227,8 +241,10 @@ export class ObsidianRewarderSettings extends PluginSettingTab {
 					.setPlaceholder("{")
 					.setValue(this.plugin.settings.escapeCharacterBegin)
 					.onChange(async (value) => {
-						this.plugin.settings.escapeCharacterBegin = value;
-						await this.plugin.saveSettings();
+						if (value.length > 0) {
+							this.plugin.settings.escapeCharacterBegin = value;
+							await this.plugin.saveSettings();
+						}
 					})
 			)
 			.addExtraButton((button) =>
@@ -249,8 +265,10 @@ export class ObsidianRewarderSettings extends PluginSettingTab {
 				text.setPlaceholder("}")
 					.setValue(this.plugin.settings.escapeCharacterEnd)
 					.onChange(async (value) => {
-						this.plugin.settings.escapeCharacterEnd = value;
-						await this.plugin.saveSettings();
+						if (value.length > 0) {
+							this.plugin.settings.escapeCharacterEnd = value;
+							await this.plugin.saveSettings();
+						}
 					});
 			})
 			.addExtraButton((button) =>
