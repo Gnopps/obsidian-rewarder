@@ -2,12 +2,18 @@
 
 ### Intro
 
-This is a plugin to reward yourself when you complete tasks.
+This is a plugin to reward yourself when you complete tasks. Rewards can be given for every task or at random intervals.
+
 ![Example of completing a task](https://raw.githubusercontent.com/Gnopps/obsidian-rewarder/master/Example.gif)
 
 ### Getting started
 
 1. List your available rewards. Do this with one reward per row in a separate file. By default this is "Rewards.md", but this can be changed to any file in the settings. If you want to get started quickly you can run the command "Create sample rewards note" to create an example rewards file.
+   Example file content:
+    > - Have a cup of tea
+    > - Watch an episode of favourite series {rare} {20}
+    > - Knit for 15 minutes {rare}
+    > - Open the birthday present champagne bottle {legendary} {1}
 2. Complete a task by clicking its check-box. Obsidian Rewarded will now randomly determine if you should get a reward and if so, which. You'll be notified with a message in Obsidian.
 
 ### Configurating rewards
@@ -20,16 +26,20 @@ Each reward has two optional settings:
 Reward settings are inserted by adding a number and/or occurence within double-brackets on the same row as the reward. If you prefer, double-brackets can be replcaed with something else in settings. For examaple:
 
 > Eat candy
-> This reward will be common and never run out
+
+This reward will be common and never run out
 
 > Eat cake {4}
-> This reward will be common and run out once it has been awarded 4 times
+
+This reward will be common and run out once it has been awarded 4 times
 
 > Have a nap {rare}
-> This reward will occur rarely but will never run out
+
+This reward will occur rarely but will never run out
 
 > Have a beer {rare} {5}
-> This reward will occur rarely and will run out once it has been awarded 5 times
+
+This reward will occur rarely and will run out once it has been awarded 5 times
 
 ### Settings
 
