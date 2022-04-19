@@ -30,19 +30,19 @@ Reward settings are inserted by adding a number and/or occurence within double-b
 
 > Eat candy
 
-This reward will be common and never run out
+The above reward will be common and never run out
 
 > Eat cake {4}
 
-This reward will be common and run out once it has been awarded 4 times
+The above reward will be common and run out once it has been awarded 4 times
 
 > Have a nap {rare}
 
-This reward will occur rarely but will never run out
+The above reward will occur rarely but will never run out
 
 > Have a beer {rare} {5}
 
-This reward will occur rarely and will run out once it has been awarded 5 times
+The above reward will occur rarely and will run out once it has been awarded 5 times
 
 ### Settings
 
