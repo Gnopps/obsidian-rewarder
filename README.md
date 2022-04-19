@@ -10,7 +10,12 @@ This is a plugin to reward yourself when you complete tasks. Rewards can be give
 
 1. List your available rewards. Do this with one reward per row in a separate file. By default this is "Rewards.md", but this can be changed to any file in the settings. If you want to get started quickly you can run the command "Create sample rewards note" to create an example rewards file.
 
-Example file content: > - Have a cup of tea > - Watch an episode of favourite series {rare} {20} > - Knit for 15 minutes {rare} > - Open the birthday present champagne bottle {legendary} {1}
+Example file content:
+
+> -   Have a cup of tea
+> -   Watch an episode of favourite series {rare} {20}
+> -   Knit for 15 minutes {rare}
+> -   Open the birthday present champagne bottle {legendary} {1}
 
 2. Complete a task by clicking its check-box. Obsidian Rewarded will now randomly determine if you should get a reward and if so, which. You'll be notified with a message in Obsidian.
 
