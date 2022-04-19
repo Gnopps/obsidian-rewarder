@@ -3,6 +3,7 @@
 ### Intro
 
 This is a plugin to reward yourself when you complete tasks.
+![Example of completing a task](https://raw.githubusercontent.com/Gnopps/obsidian-rewarder/master/Example.gif)
 
 ### Getting started
 
