@@ -26,7 +26,7 @@ Each reward has two optional settings:
 -   _Occurence_: This defines how often a reward should occur. You may want the reward "Eat candy" to occur more often than "Buy a bottle of champagne". There are three different occurence-levels, by default these are
     -   common
     -   rare
-    -   legendary
+    -   legendary  
         In the settings it possible to change both the name and chance of each occurence. Rewards with no occurence specified will default to "common".
 -   _Inventory_: This defines how many items of each rewards are available. If you have a "Eat candy"-reward but only have 5 candies, then you may want to set the maximum number this reward can occur to 5. Every time this reward is given the inventory will automatically be substracted by 1 in the rewards-file. Once 0 is reached, this reward will no longer be given. If not specified, this defaults to unlimited.
 
