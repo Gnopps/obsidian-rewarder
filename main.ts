@@ -409,9 +409,6 @@ class CongratulationsModal extends Modal {
       modal.createEl("img", {
         attr: {
           src: this.rewardObject.imageLink,
-          "max-width": "100%",
-          "max-height": "200px",
-          height: "auto",
         },
       });
       modal.createEl("h2", {
