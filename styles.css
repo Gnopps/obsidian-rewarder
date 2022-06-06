@@ -9,3 +9,8 @@
 .rewarderModal p {
 	text-align: center !important;
 }
+
+.rewarderModal img {
+	display: block !important;
+	margin: auto !important;
+}

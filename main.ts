@@ -43,12 +43,12 @@ export default class ObsidianRewarder extends Plugin {
     // Taken from here: https://stackoverflow.com/questions/256754/how-to-pass-arguments-to-addeventlistener-listener-function
     return function curriedFunction(evt) {
       if (evt.target.checked) {
-        self.handleReward();
+        self.handleReward(evt.target.offsetParent.innerText);
       }
     };
   };
 
-  async handleReward() {
+  async handleReward(clickedTaskText) {
     let arrayOfCleanedRewards = [];
     let chosenReward;
     let rewardsByOccurrence = {};
@@ -83,7 +83,7 @@ export default class ObsidianRewarder extends Plugin {
       const dirtyReward = dirtyRewards[i];
 
       let rewardsLeft = 1;
-      let occurrence = "";
+      let occurrence = this.settings.occurrenceTypes[0].label;
       let rewardName = "";
       let imageLink = "";
       let metadataValues = [];
@@ -102,8 +102,6 @@ export default class ObsidianRewarder extends Plugin {
         );
         if (metadataStart[i] < 0) {
           // If first metadata not found then put default values
-          occurrence = this.settings.occurrenceTypes[0].label;
-          rewardsLeft = 1;
           rewardName = dirtyRewardWithPartialMetadataStripped;
           break;
         } else {
@@ -112,7 +110,10 @@ export default class ObsidianRewarder extends Plugin {
             metadataEnd[i]
           );
         }
-        if (metadataValues[i].substring(0, 8) === "file:///") {
+        if (
+          metadataValues[i].substring(0, 6) === "app://" ||
+          metadataValues[i].substring(0, 4) === "http"
+        ) {
           imageLink = metadataValues[i];
         } else if (/^\d+$/.test(metadataValues[i])) {
           rewardsLeft = metadataValues[i];
@@ -154,7 +155,6 @@ export default class ObsidianRewarder extends Plugin {
       [this.settings.occurrenceTypes[1].label]: 0,
       [this.settings.occurrenceTypes[2].label]: 0,
     };
-
     for (let i = 0; i < arrayOfCleanedRewards.length; i++) {
       foundOccurenceTypes[arrayOfCleanedRewards[i].occurrence] =
         foundOccurenceTypes[arrayOfCleanedRewards[i].occurrence] + 1;
@@ -276,10 +276,23 @@ export default class ObsidianRewarder extends Plugin {
 
     // Log to daily note, partly taken from https://github.com/kzhovn/statusbar-pomo-obsidian/blob/master/src/timer.ts
 
-    const logText = "Earned reward: " + chosenReward.rewardName;
+    let logText = this.settings.saveRewardToDaily
+      ? "Earned reward: " + chosenReward.rewardName
+      : "";
+    logText =
+      logText +
+      (this.settings.saveTaskToDaily
+        ? (logText.length > 0 ? "\r" : "") +
+          this.settings.completedTaskCharacter +
+          clickedTaskText +
+          " ([[" +
+          this.app.workspace.getActiveFile().basename +
+          "]])"
+        : "");
 
     if (
-      this.settings.saveToDaily === true &&
+      (this.settings.saveRewardToDaily === true ||
+        this.settings.saveTaskToDaily === true) &&
       appHasDailyNotesPluginLoaded() === true
     ) {
       let file = (await getDailyNoteFile()).path;
@@ -392,6 +405,14 @@ class CongratulationsModal extends Modal {
       modal.createEl("h1", {
         text: "⭐ " + this.rewardObject.rewardName + " ⭐",
         cls: "rewardName",
+      });
+      modal.createEl("img", {
+        attr: {
+          src: this.rewardObject.imageLink,
+          "max-width": "100%",
+          "max-height": "200px",
+          height: "auto",
+        },
       });
       modal.createEl("h2", {
         text: "🎈 🎉 🎈",
