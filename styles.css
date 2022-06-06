@@ -10,6 +10,11 @@
 	text-align: center !important;
 }
 
+.rewarderModal button {
+	display: block !important;
+	margin: auto !important;
+}
+
 .rewarderModal img {
 	display: block !important;
 	margin: auto !important;

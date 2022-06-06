@@ -229,12 +229,9 @@ export default class ObsidianRewarder extends Plugin {
 
     // Show notification
 
+    let modifier;
     if (this.settings.showModal) {
-      new CongratulationsModal(
-        this.app,
-        chosenReward,
-        this.settings.useAsInspirational
-      ).open();
+      modifier = await displayModal(this.app, chosenReward, this.settings);
     } else {
       const stringToShow = this.settings.useAsInspirational
         ? chosenReward.rewardName
@@ -244,12 +241,13 @@ export default class ObsidianRewarder extends Plugin {
           " ⭐";
       new Notice(stringToShow);
     }
-
     // Substract reward quantity
 
     let adjustedReward;
+
     if (chosenReward.rewardsLeft) {
-      let newRewardsLeft = chosenReward.rewardsLeft - 1;
+      let newRewardsLeft =
+        parseInt(chosenReward.rewardsLeft) + parseInt(modifier);
       adjustedReward = chosenReward.dirtyReward.replace(
         this.settings.escapeCharacterBegin +
           chosenReward.rewardsLeft +
@@ -379,21 +377,42 @@ export default class ObsidianRewarder extends Plugin {
   }
 }
 
+export async function displayModal(
+  app: App,
+  rewardObject: any,
+  settings: any
+): Promise<boolean> {
+  return new Promise((resolve, reject) => {
+    try {
+      const modal = new CongratulationsModal(app, rewardObject, settings);
+      modal.onClose = () => {
+        resolve(modal.modifier);
+      };
+      modal.open();
+    } catch (e) {
+      reject();
+    }
+  });
+}
+
 class CongratulationsModal extends Modal {
-  constructor(
-    app: App,
-    public rewardObject: any,
-    public useAsInspirational: boolean
-  ) {
+  constructor(app: App, public rewardObject: any, public settings: any) {
     super(app);
   }
+
+  modifier: number = -1;
 
   onOpen() {
     const { contentEl, containerEl } = this;
     const modal = contentEl.createEl("div", { cls: "rewarderModal" });
-    if (this.useAsInspirational) {
+    if (this.settings.useAsInspirational) {
       modal.createEl("h1", {
         text: this.rewardObject.rewardName,
+      });
+      modal.createEl("img", {
+        attr: {
+          src: this.rewardObject.imageLink,
+        },
       });
     } else {
       modal.createEl("h2", {
@@ -414,6 +433,15 @@ class CongratulationsModal extends Modal {
       modal.createEl("h2", {
         text: "🎈 🎉 🎈",
       });
+      modal
+        .createEl("button", {
+          attr: { type: "button" },
+          text: "Skip this reward",
+        })
+        .addEventListener("click", () => {
+          this.modifier = 0;
+          this.close();
+        });
     }
   }
 

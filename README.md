@@ -17,7 +17,7 @@ Example file content:
 > - Knit for 15 minutes {rare}
 > - Open the birthday present champagne bottle {legendary} {1}
 
-2. Complete a task by clicking its checkbox. Obsidian Rewarder will now randomly determine if you should get a reward and if so, which. You'll be notified with a message in Obsidian.
+2. Complete a task by clicking its checkbox. Obsidian Rewarder will now randomly determine if you should get a reward and if so, which. You'll be notified with a message in Obsidian. If you click the button to "Skip this reward" then the reward's inventory will not be adjusted.
 
 ### Configurating rewards
 
