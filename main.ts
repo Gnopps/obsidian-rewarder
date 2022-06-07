@@ -43,7 +43,7 @@ export default class ObsidianRewarder extends Plugin {
     // Taken from here: https://stackoverflow.com/questions/256754/how-to-pass-arguments-to-addeventlistener-listener-function
     return function curriedFunction(evt) {
       if (evt.target.checked) {
-        self.handleReward(evt.target.offsetParent.innerText);
+        self.handleReward(evt.path[1].innerText);
       }
     };
   };
@@ -192,7 +192,8 @@ export default class ObsidianRewarder extends Plugin {
     const lotteryNumber = Math.floor(Math.random() * 1000);
 
     if (lotteryNumber > sumOfOccurrences) {
-      // Did not get a reward
+      // Did not get a reward but still check if we should log
+      this.logToDailyNote(clickedTaskText, {}, true);
       return;
     }
 
@@ -272,20 +273,25 @@ export default class ObsidianRewarder extends Plugin {
       new Notice("Obsidian Rewards couldn't modify the rewards file.");
     }
 
+    this.logToDailyNote(clickedTaskText, chosenReward, false);
+  }
+
+  async logToDailyNote(clickedTaskText, chosenReward, logTaskOnly) {
     // Log to daily note, partly taken from https://github.com/kzhovn/statusbar-pomo-obsidian/blob/master/src/timer.ts
 
-    let logText = this.settings.saveRewardToDaily
-      ? "Earned reward: " + chosenReward.rewardName
+    let logText = this.settings.saveTaskToDaily
+      ? this.settings.completedTaskCharacter +
+        clickedTaskText +
+        " ([[" +
+        this.app.workspace.getActiveFile().basename +
+        "]])"
       : "";
     logText =
       logText +
-      (this.settings.saveTaskToDaily
+      (this.settings.saveRewardToDaily && logTaskOnly === false
         ? (logText.length > 0 ? "\r" : "") +
-          this.settings.completedTaskCharacter +
-          clickedTaskText +
-          " ([[" +
-          this.app.workspace.getActiveFile().basename +
-          "]])"
+          "Earned reward: " +
+          chosenReward.rewardName
         : "");
 
     if (
