@@ -36,9 +36,9 @@ Each reward has three optional settings:
 - _Image_: This can be used to insert a link to an image to be displayed when the reward is earned. The image link has to be in one of the following formats:
 
   - {https://example.com/images/beer.png} for images hosted online
-  - {app://local/C:/Files/beer.png} for images hosted on your computer. Note that this spaces and other special characters need to be replaced. The plugin [Obsidan File path to URI](https://github.com/MichalBures/obsidian-file-path-to-uri) is a great plugin to do this automatically.
+  - {app://local/C:/Files/beer.png} for images hosted on your computer. Note that spaces and other special characters need to be replaced. The plugin [Obsidan File path to URI](https://github.com/MichalBures/obsidian-file-path-to-uri) is a great plugin to do this automatically.
 
-Reward settings are inserted by adding a number and/or occurence within double-brackets on the same row as the reward. If you prefer, double-brackets can be replcaed with something else in settings. The reward settings can be entered in any order you wish. Examples:
+Reward settings are inserted by adding a number, occurence, and/or link within double-brackets on the same row as the reward. If you prefer, double-brackets can be replaced with something else in settings. The reward settings can be entered in any order you wish. Examples:
 
 > Eat candy
 
@@ -79,7 +79,7 @@ The following configuration options are possible
 
 #### Special characters settings
 
-- _Start of metadada_: What character is used as prefix for completed tasks in daily notes
+- _Completed task_: What character is used as prefix for completed tasks in daily notes
 - _Start/End of metadata_: Allows you to define between what characters your rewards have the data of occurence and inventory. Defaults to "{" and "}".
 
 ### Commands
