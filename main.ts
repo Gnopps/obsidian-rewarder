@@ -37,17 +37,6 @@ export async function getDailyNoteFile(): Promise<TFile> {
 export default class ObsidianRewarder extends Plugin {
   settings: ObsidianRewarderSettings;
 
-  functionReference; // To be able to remove eventlistener: https://stackoverflow.com/questions/65379045/remove-event-listener-with-an-anonymous-function-with-a-local-scope-variable
-
-  eventFunction = function (self) {
-    // Taken from here: https://stackoverflow.com/questions/256754/how-to-pass-arguments-to-addeventlistener-listener-function
-    return function curriedFunction(evt) {
-      if (evt.target.checked) {
-        self.handleReward(evt.path[1].innerText);
-      }
-    };
-  };
-
   async handleReward(clickedTaskText) {
     let arrayOfCleanedRewards = [];
     let chosenReward;
@@ -357,21 +346,22 @@ export default class ObsidianRewarder extends Plugin {
       },
     });
 
-    window.addEventListener(
-      // Adding like this instead of registerDomEvent as can't use the "capture"-option with it. Capture needed as Obsidian-tasks stops propagation.
-      "click",
-      (this.functionReference = this.eventFunction(this)),
-      {
-        capture: true,
+    let callback = (evt: Event) => {
+      if (
+        evt.target instanceof HTMLInputElement &&
+        evt.target.type === "checkbox" &&
+        evt.target.checked
+      ) {
+        this.handleReward(evt.path[1].innerText);
       }
-    );
-  }
+    };
 
-  async onunload(): void {
-    // Remove event listeners
-    window.removeEventListener("click", this.functionReference, {
-      capture: true,
-    });
+    window.addEventListener("click", callback, { capture: true }); // Adding like this instead of registerDomEvent as can't use the "capture"-option with it. Capture needed as Obsidian-tasks stops propagation.
+
+    // This registers the unload function
+    this.register(() =>
+      window.removeEventListener("click", callback, { capture: true })
+    );
   }
 
   async loadSettings() {
