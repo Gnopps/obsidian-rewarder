@@ -352,7 +352,9 @@ export default class ObsidianRewarder extends Plugin {
         evt.target.type === "checkbox" &&
         evt.target.checked
       ) {
-        this.handleReward(evt.path[1].innerText);
+        evt.target.parentNode.innerText.length > 0 // Check where task name is, depends on if is using Obsidian Tasks or not
+          ? this.handleReward(evt.target.parentNode.innerText)
+          : this.handleReward(evt.target.parentNode.parentNode.innerText);
       }
     };
 
