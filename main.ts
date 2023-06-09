@@ -273,8 +273,11 @@ export default class ObsidianRewarder extends Plugin {
         clickedTaskText +
         " ([[" +
         this.app.workspace.getActiveFile().basename +
-        "]])"
+        "]])" +
+        " - " +
+        moment().format("HH:mm")
       : "";
+
     logText =
       logText +
       (this.settings.saveRewardToDaily && logTaskOnly === false
