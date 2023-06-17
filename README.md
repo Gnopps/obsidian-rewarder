@@ -69,7 +69,7 @@ The following configuration options are possible
 - _File with rewards_: The file (including folder if applicable) where the rewards are stored. Defaults to "Rewards.md".
 - _Show popup when reward is awarded_: If activated a popup (modal) will be shown when a reward is awarded, you'll need to close this before you can continue your work. If deactivated only a timed notice will be shown.
 - _Save rewards in daily note_: When active will amend any rewards received to the end of your daily note, one row per awarded reward.
-- _Save task in daily note_: When active will amend completed tasks to the end of your daily note, one row per completed task. The task will be listed with its name and a link to the page it was completed on.
+- _Save task in daily note_: When active will amend completed tasks to the end of your daily note, one row per completed task. The task will be listed with its name, time completed, and a link to the page it was completed on.
 - _Use with quotes instead of rewards_: Activate this if you are working with inspirational quotes instead of rewards. When active, your rewards are showing without any congratulations or other added text.
 
 #### Reward settings
