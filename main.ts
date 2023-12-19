@@ -280,7 +280,7 @@ export default class ObsidianRewarder extends Plugin {
   async logToDailyNote(clickedTaskText, chosenReward, logTaskOnly) {
     // Log to daily note, partly taken from https://github.com/kzhovn/statusbar-pomo-obsidian/blob/master/src/timer.ts
 
-    let logText = this.settings.saveTaskToDaily
+    let logTasksText = this.settings.saveTaskToDaily
       ? this.settings.completedTaskCharacter +
         clickedTaskText +
         " ([[" +
@@ -290,11 +290,9 @@ export default class ObsidianRewarder extends Plugin {
         moment().format("HH:mm")
       : "";
 
-    logText =
-      logText +
+    let logRewardsText =
       (this.settings.saveRewardToDaily && logTaskOnly === false
-        ? (logText.length > 0 ? "\r" : "") +
-          "Earned reward: " +
+        ? "Earned reward: " +
           chosenReward.rewardName
         : "");
 
@@ -308,9 +306,37 @@ export default class ObsidianRewarder extends Plugin {
 
       let existingContent = await this.app.vault.adapter.read(file);
       if (existingContent.length > 0) {
-        existingContent = existingContent + "\r";
+        const saveTaskSectionHeading = this.settings.saveTaskSectionHeading;
+        if (saveTaskSectionHeading) {
+          // from https://stackoverflow.com/questions/66616065/markdown-regex-to-find-all-content-following-an-heading-2-but-stop-at-another
+          const matches = existingContent.match(new RegExp("(?:^|\n)" + saveTaskSectionHeading + "[^\n]*\n.*?(?=\n##?\s?|$)", 'gs'));
+          if (matches && matches.length > 0) {
+            const match = matches[0];
+            existingContent = existingContent.replace(match, match + "\n" + logTasksText);
+          } else {
+            existingContent = existingContent + "\n" + logTasksText;
+          }
+        } else {
+          existingContent = existingContent + "\n" + logTasksText;
+        }
+
+        if (logTaskOnly === false) {
+          const saveRewardSectionHeading = this.settings.saveRewardSectionHeading;
+          if (saveRewardSectionHeading) {
+            const matches = existingContent.match(new RegExp("(?:^|\n)" + saveRewardSectionHeading + "[^\n]*\n.*?(?=\n##?\s?|$)", 'gs'));
+            if (matches && matches.length > 0) {
+              const match = matches[0];
+              existingContent = existingContent.replace(match, match + "\n" + logRewardsText);
+            } else {
+              existingContent = existingContent + "\n" + logRewardsText;
+            }
+          } else {
+            existingContent = existingContent + "\n" + logRewardsText;
+          }
+        }
       }
-      await this.app.vault.adapter.write(file, existingContent + logText);
+
+      await this.app.vault.adapter.write(file, existingContent);
     }
   }
 

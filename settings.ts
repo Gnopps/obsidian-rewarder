@@ -19,7 +19,9 @@ export interface ObsidianRewarderSettings {
   occurrenceTypes: {label: string, value: number}[];
   rewardsFile: string;
   saveRewardToDaily: boolean;
+  saveRewardSectionHeading?: string;
   saveTaskToDaily: boolean;
+  saveTaskSectionHeading?: string;
   showModal: boolean;
   useAsInspirational: boolean;
 }
@@ -35,7 +37,9 @@ export const DEFAULT_SETTINGS: ObsidianRewarderSettings = {
   ],
   rewardsFile: "Rewards.md",
   saveRewardToDaily: false,
+  saveRewardSectionHeading: undefined,
   saveTaskToDaily: false,
+  saveTaskSectionHeading: undefined,
   showModal: true,
   useAsInspirational: false,
 };
@@ -98,7 +102,7 @@ export class ObsidianRewarderSettingsTab extends PluginSettingTab {
 
     new Setting(this.containerEl)
       .setName("Save rewards in daily note")
-      .setDesc("Will save rewards received to the end of the daily note")
+      .setDesc("Will save rewards received to the end of the daily note or section heading specified below")
       .addToggle((toggle) => {
         toggle.setValue(this.plugin.settings.saveRewardToDaily);
         toggle.onChange(async (value) => {
@@ -107,9 +111,40 @@ export class ObsidianRewarderSettingsTab extends PluginSettingTab {
         });
       });
 
+    new Setting(containerEl)
+      .setName("The section heading of daily note used to save rewards")
+      .setDesc(
+        "This section heading is used as the place for saving rewards received in the daily note"
+      )
+      .addText((text) =>
+        text
+          .setPlaceholder("## Rewards")
+          .setValue(
+            this.plugin.settings.saveRewardSectionHeading
+              ? this.plugin.settings.saveRewardSectionHeading
+              : "")
+          .onChange(async (value) => {
+            if (value.length > 0 && value.match(/^#+/)) {
+              this.plugin.settings.saveRewardSectionHeading = value;
+              await this.plugin.saveSettings();
+            }
+          })
+      )
+      .addExtraButton((button) =>
+        button
+          .setIcon("reset")
+          .setTooltip("Restore default")
+          .onClick(async () => {
+            this.plugin.settings.saveRewardSectionHeading =
+              DEFAULT_SETTINGS.saveRewardSectionHeading;
+            await this.plugin.saveSettings();
+            this.display();
+          })
+      );
+
     new Setting(this.containerEl)
       .setName("Save task in daily note")
-      .setDesc("Will save completed tasks to the end of the daily note")
+      .setDesc("Will save completed tasks to the end of the daily note or section heading specified below")
       .addToggle((toggle) => {
         toggle.setValue(this.plugin.settings.saveTaskToDaily);
         toggle.onChange(async (value) => {
@@ -117,6 +152,37 @@ export class ObsidianRewarderSettingsTab extends PluginSettingTab {
           await this.plugin.saveSettings();
         });
       });
+
+    new Setting(containerEl)
+      .setName("The section heading of daily note used to save tasks")
+      .setDesc(
+        "This section heading is used as the place for saving the completed tasks in the daily note"
+      )
+      .addText((text) =>
+        text
+          .setPlaceholder("## CompletedTasks")
+          .setValue(
+            this.plugin.settings.saveTaskSectionHeading
+              ? this.plugin.settings.saveTaskSectionHeading
+              : "")
+          .onChange(async (value) => {
+            if (value.length > 0 && value.match(/^#+/)) {
+              this.plugin.settings.saveTaskSectionHeading = value;
+              await this.plugin.saveSettings();
+            }
+          })
+      )
+      .addExtraButton((button) =>
+        button
+          .setIcon("reset")
+          .setTooltip("Restore default")
+          .onClick(async () => {
+            this.plugin.settings.saveTaskSectionHeading =
+              DEFAULT_SETTINGS.saveTaskSectionHeading;
+            await this.plugin.saveSettings();
+            this.display();
+          })
+      );
 
     new Setting(this.containerEl)
       .setName("Use with quotes instead of rewards")
