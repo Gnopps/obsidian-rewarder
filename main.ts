@@ -20,6 +20,8 @@ import {
   getAllDailyNotes,
 } from "obsidian-daily-notes-interface";
 
+import { around } from "monkey-around";
+
 import { ObsidianRewarderSettings, DEFAULT_SETTINGS } from "./settings";
 
 // Add "batch-mode" where there is only call-out when award won and then all awards are stored in daily-note or batch file
@@ -367,6 +369,30 @@ export default class ObsidianRewarder extends Plugin {
     this.register(() =>
       window.removeEventListener("click", callback, { capture: true })
     );
+
+    if (this.app.workspace.layoutReady) {
+      this.onLayoutReady();
+    } else {
+      this.app.workspace.on("layout-ready", this.onLayoutReady.bind(this));
+    }
+  }
+
+  onLayoutReady() {
+    const toggleCheckboxStatusCommand = this.app.commands.findCommand("editor:toggle-checklist-status");
+    const that = this;
+    around(toggleCheckboxStatusCommand, {
+      editorCallback: (next) => function(editor: Editor) {
+        next.call(this, editor);
+        let cursor = editor.getCursor();
+        let lineText = editor.getLine(cursor.line);
+
+        const idx = lineText.search(/- \[x\] /); // only checked status
+        if (idx >= 0) {
+          const checkedTaskText = lineText.substring(idx + 6);
+          that.handleReward(checkedTaskText);
+        }
+      }
+    });
   }
 
   async loadSettings() {
