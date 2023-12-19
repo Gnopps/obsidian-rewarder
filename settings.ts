@@ -16,7 +16,7 @@ export interface ObsidianRewarderSettings {
   completedTaskCharacter: string;
   escapeCharacterBegin: string;
   escapeCharacterEnd: string;
-  occurrenceTypes: Array<object>;
+  occurrenceTypes: {label: string, value: number}[];
   rewardsFile: string;
   saveRewardToDaily: boolean;
   saveTaskToDaily: boolean;
@@ -40,7 +40,9 @@ export const DEFAULT_SETTINGS: ObsidianRewarderSettings = {
   useAsInspirational: false,
 };
 
-export class ObsidianRewarderSettings extends PluginSettingTab {
+import ObsidianRewarder from "./main"
+
+export class ObsidianRewarderSettingsTab extends PluginSettingTab {
   plugin: ObsidianRewarder;
 
   constructor(app: App, plugin: ObsidianRewarder) {
@@ -48,7 +50,7 @@ export class ObsidianRewarderSettings extends PluginSettingTab {
     this.plugin = plugin;
   }
 
-  sanitiseNote(value: string): string {
+  sanitiseNote(value: string): string | null {
     // Taken from homepage plugin
     if (value === null || value.match(/^\s*$/) !== null) {
       return null;
@@ -157,8 +159,9 @@ export class ObsidianRewarderSettings extends PluginSettingTab {
           text
             .setPlaceholder(this.plugin.settings.occurrenceTypes[i].value)
             .setValue(this.plugin.settings.occurrenceTypes[i].value.toString())
-            .onChange(async (value) => {
-              if (value.length > 0) {
+            .onChange(async (text: string) => {
+              if (text.length > 0) {
+                let value = parseFloat(text);
                 let refreshDisplay = false;
                 if (value > 100) {
                   value = 100;

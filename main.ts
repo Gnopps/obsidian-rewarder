@@ -1,5 +1,7 @@
 import {
   App,
+  TFile,
+  FileManager,
   debounce,
   Editor,
   MarkdownView,
@@ -22,7 +24,7 @@ import {
 
 import { around } from "monkey-around";
 
-import { ObsidianRewarderSettings, DEFAULT_SETTINGS } from "./settings";
+import { ObsidianRewarderSettings, DEFAULT_SETTINGS, ObsidianRewarderSettingsTab } from "./settings";
 
 // Add "batch-mode" where there is only call-out when award won and then all awards are stored in daily-note or batch file
 
@@ -39,14 +41,22 @@ export async function getDailyNoteFile(): Promise<TFile> {
 export default class ObsidianRewarder extends Plugin {
   settings: ObsidianRewarderSettings;
 
-  async handleReward(clickedTaskText) {
+  async handleReward(clickedTaskText: String) {
     let arrayOfCleanedRewards = [];
     let chosenReward;
     let rewardsByOccurrence = {};
 
     // Read contents of rewards file
     const { vault } = this.app;
-    let rewardsFile = vault.getAbstractFileByPath(this.settings.rewardsFile);
+    const rewardsFile = vault.getAbstractFileByPath(this.settings.rewardsFile);
+
+
+    if (rewardsFile === null || !(rewardsFile instanceof TFile)) {
+      new Notice(
+        "Obsidian Rewards couldn't open the rewards file.\nPlease check the path in the settings."
+      );
+      return;
+    }
 
     let contents;
 
@@ -107,7 +117,7 @@ export default class ObsidianRewarder extends Plugin {
         ) {
           imageLink = metadataValues[i];
         } else if (/^\d+$/.test(metadataValues[i])) {
-          rewardsLeft = metadataValues[i];
+          rewardsLeft = parseInt(metadataValues[i]);
         } else {
           occurrence = metadataValues[i];
         }
@@ -341,7 +351,7 @@ export default class ObsidianRewarder extends Plugin {
   async onload() {
     await this.loadSettings();
 
-    this.addSettingTab(new ObsidianRewarderSettings(this.app, this));
+    this.addSettingTab(new ObsidianRewarderSettingsTab(this.app, this));
 
     this.addCommand({
       id: "create-sample-rewards-note",
