@@ -309,7 +309,7 @@ export default class ObsidianRewarder extends Plugin {
         const saveTaskSectionHeading = this.settings.saveTaskSectionHeading;
         if (saveTaskSectionHeading) {
           // from https://stackoverflow.com/questions/66616065/markdown-regex-to-find-all-content-following-an-heading-2-but-stop-at-another
-          const matches = existingContent.match(new RegExp("(?:^|\n)" + saveTaskSectionHeading + "[^\n]*\n.*?(?=\n##?\s?|$)", 'gs'));
+          const matches = existingContent.match(new RegExp("(?:^|\n)" + saveTaskSectionHeading + "[^\n]*\n.*?(?=\n*##?\s?|$)", 'gs'));
           if (matches && matches.length > 0) {
             const match = matches[0];
             existingContent = existingContent.replace(match, match + "\n" + logTasksText);
@@ -323,7 +323,7 @@ export default class ObsidianRewarder extends Plugin {
         if (logTaskOnly === false) {
           const saveRewardSectionHeading = this.settings.saveRewardSectionHeading;
           if (saveRewardSectionHeading) {
-            const matches = existingContent.match(new RegExp("(?:^|\n)" + saveRewardSectionHeading + "[^\n]*\n.*?(?=\n##?\s?|$)", 'gs'));
+            const matches = existingContent.match(new RegExp("(?:^|\n)" + saveRewardSectionHeading + "[^\n]*\n.*?(?=\n*##?\s?|$)", 'gs'));
             if (matches && matches.length > 0) {
               const match = matches[0];
               existingContent = existingContent.replace(match, match + "\n" + logRewardsText);
