@@ -1,7 +1,7 @@
 {
 	"id": "obsidian-rewarder",
 	"name": "Rewarder",
-	"version": "0.3.1",
+	"version": "0.4.0",
 	"minAppVersion": "0.12.0",
 	"description": "Gives you rewards for completing tasks/todos, highly configurable.",
 	"author": "Obsidian",

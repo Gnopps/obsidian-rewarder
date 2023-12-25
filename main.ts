@@ -1,5 +1,7 @@
 import {
   App,
+  TFile,
+  FileManager,
   debounce,
   Editor,
   MarkdownView,
@@ -20,7 +22,9 @@ import {
   getAllDailyNotes,
 } from "obsidian-daily-notes-interface";
 
-import { ObsidianRewarderSettings, DEFAULT_SETTINGS } from "./settings";
+import { around } from "monkey-around";
+
+import { ObsidianRewarderSettings, DEFAULT_SETTINGS, ObsidianRewarderSettingsTab } from "./settings";
 
 // Add "batch-mode" where there is only call-out when award won and then all awards are stored in daily-note or batch file
 
@@ -37,14 +41,22 @@ export async function getDailyNoteFile(): Promise<TFile> {
 export default class ObsidianRewarder extends Plugin {
   settings: ObsidianRewarderSettings;
 
-  async handleReward(clickedTaskText) {
+  async handleReward(clickedTaskText: String) {
     let arrayOfCleanedRewards = [];
     let chosenReward;
     let rewardsByOccurrence = {};
 
     // Read contents of rewards file
     const { vault } = this.app;
-    let rewardsFile = vault.getAbstractFileByPath(this.settings.rewardsFile);
+    const rewardsFile = vault.getAbstractFileByPath(this.settings.rewardsFile);
+
+
+    if (rewardsFile === null || !(rewardsFile instanceof TFile)) {
+      new Notice(
+        "Obsidian Rewards couldn't open the rewards file.\nPlease check the path in the settings."
+      );
+      return;
+    }
 
     let contents;
 
@@ -105,7 +117,7 @@ export default class ObsidianRewarder extends Plugin {
         ) {
           imageLink = metadataValues[i];
         } else if (/^\d+$/.test(metadataValues[i])) {
-          rewardsLeft = metadataValues[i];
+          rewardsLeft = parseInt(metadataValues[i]);
         } else {
           occurrence = metadataValues[i];
         }
@@ -268,7 +280,7 @@ export default class ObsidianRewarder extends Plugin {
   async logToDailyNote(clickedTaskText, chosenReward, logTaskOnly) {
     // Log to daily note, partly taken from https://github.com/kzhovn/statusbar-pomo-obsidian/blob/master/src/timer.ts
 
-    let logText = this.settings.saveTaskToDaily
+    let logTasksText = this.settings.saveTaskToDaily
       ? this.settings.completedTaskCharacter +
         clickedTaskText +
         " ([[" +
@@ -278,17 +290,14 @@ export default class ObsidianRewarder extends Plugin {
         moment().format("HH:mm")
       : "";
 
-    logText =
-      logText +
+    let logRewardsText =
       (this.settings.saveRewardToDaily && logTaskOnly === false
-        ? (logText.length > 0 ? "\r" : "") +
-          "Earned reward: " +
+        ? "Earned reward: " +
           chosenReward.rewardName
         : "");
 
     if (
-      (this.settings.saveRewardToDaily === true ||
-        this.settings.saveTaskToDaily === true) &&
+      (this.settings.saveRewardToDaily === true || this.settings.saveTaskToDaily === true) &&
       appHasDailyNotesPluginLoaded() === true
     ) {
       let file = (await getDailyNoteFile()).path;
@@ -296,9 +305,39 @@ export default class ObsidianRewarder extends Plugin {
 
       let existingContent = await this.app.vault.adapter.read(file);
       if (existingContent.length > 0) {
-        existingContent = existingContent + "\r";
+        if (this.settings.saveTaskToDaily) {
+          const saveTaskSectionHeading = this.settings.saveTaskSectionHeading;
+          if (saveTaskSectionHeading) {
+            // from https://stackoverflow.com/questions/66616065/markdown-regex-to-find-all-content-following-an-heading-2-but-stop-at-another
+            const matches = existingContent.match(new RegExp("(?:^|\n)" + saveTaskSectionHeading + "[^\n]*\n.*?(?=\n*##?\s?|$)", 'gs'));
+            if (matches && matches.length > 0) {
+              const match = matches[0];
+              existingContent = existingContent.replace(match, match + "\n" + logTasksText);
+            } else {
+              existingContent = existingContent + "\n" + logTasksText;
+            }
+          } else {
+            existingContent = existingContent + "\n" + logTasksText;
+          }
+        }
+
+        if (this.settings.saveRewardToDaily && logTaskOnly === false) {
+          const saveRewardSectionHeading = this.settings.saveRewardSectionHeading;
+          if (saveRewardSectionHeading) {
+            const matches = existingContent.match(new RegExp("(?:^|\n)" + saveRewardSectionHeading + "[^\n]*\n.*?(?=\n*##?\s?|$)", 'gs'));
+            if (matches && matches.length > 0) {
+              const match = matches[0];
+              existingContent = existingContent.replace(match, match + "\n" + logRewardsText);
+            } else {
+              existingContent = existingContent + "\n" + logRewardsText;
+            }
+          } else {
+            existingContent = existingContent + "\n" + logRewardsText;
+          }
+        }
       }
-      await this.app.vault.adapter.write(file, existingContent + logText);
+
+      await this.app.vault.adapter.write(file, existingContent);
     }
   }
 
@@ -339,7 +378,7 @@ export default class ObsidianRewarder extends Plugin {
   async onload() {
     await this.loadSettings();
 
-    this.addSettingTab(new ObsidianRewarderSettings(this.app, this));
+    this.addSettingTab(new ObsidianRewarderSettingsTab(this.app, this));
 
     this.addCommand({
       id: "create-sample-rewards-note",
@@ -353,7 +392,8 @@ export default class ObsidianRewarder extends Plugin {
       if (
         evt.target instanceof HTMLInputElement &&
         evt.target.type === "checkbox" &&
-        evt.target.checked
+        evt.target.checked &&
+        (evt.target.parentNode.innerText.length > 0 || evt.target.parentNode.parentNode.innerText.length > 0)
       ) {
         evt.target.parentNode.innerText.length > 0 // Check where task name is, depends on if is using Obsidian Tasks or not
           ? this.handleReward(evt.target.parentNode.innerText)
@@ -367,6 +407,30 @@ export default class ObsidianRewarder extends Plugin {
     this.register(() =>
       window.removeEventListener("click", callback, { capture: true })
     );
+
+    if (this.app.workspace.layoutReady) {
+      this.onLayoutReady();
+    } else {
+      this.app.workspace.on("layout-ready", this.onLayoutReady.bind(this));
+    }
+  }
+
+  onLayoutReady() {
+    const toggleCheckboxStatusCommand = this.app.commands.findCommand("editor:toggle-checklist-status");
+    const that = this;
+    around(toggleCheckboxStatusCommand, {
+      editorCallback: (next) => function(editor: Editor) {
+        next.call(this, editor);
+        let cursor = editor.getCursor();
+        let lineText = editor.getLine(cursor.line);
+
+        const idx = lineText.search(/- \[x\] /); // only checked status
+        if (idx >= 0) {
+          const checkedTaskText = lineText.substring(idx + 6);
+          that.handleReward(checkedTaskText);
+        }
+      }
+    });
   }
 
   async loadSettings() {
